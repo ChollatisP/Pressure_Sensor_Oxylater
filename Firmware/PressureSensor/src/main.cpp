@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "PressureDisplay.h"
+#include "PressureReading.h"
 #include "RoundLcd.h"
 
 /*
@@ -25,10 +26,39 @@
 RoundLcd roundLcd(LCD_DC, LCD_CS, LCD_RST, LCD_BL);
 PressureDisplay pressureDisplay(roundLcd.display(), SENSOR_MAX_KPA);
 
-static float mockPressureKpa() {
+static PressureReading mockPressureReading() {
   const float t = millis() / 1000.0f;
+  const uint32_t scenario = (millis() / 7000) % 6;
   float pressure = 22.0f + 9.0f * sin(t * 0.75f) + 3.0f * sin(t * 2.1f);
-  return constrain(pressure, 0.0f, SENSOR_MAX_KPA);
+  SensorStatus status = SensorStatus::OK;
+
+  switch (scenario) {
+  case 1:
+    pressure = -1.2f;
+    status = SensorStatus::UNDER_RANGE;
+    break;
+  case 2:
+    pressure = SENSOR_MAX_KPA + 4.5f;
+    status = SensorStatus::OVER_RANGE;
+    break;
+  case 3:
+    pressure = 0.0f;
+    status = SensorStatus::SENSOR_DISCONNECTED;
+    break;
+  case 4:
+    pressure = SENSOR_MAX_KPA;
+    status = SensorStatus::ADC_FAULT;
+    break;
+  case 5:
+    pressure = constrain(pressure, 0.0f, SENSOR_MAX_KPA);
+    status = SensorStatus::NOT_CALIBRATED;
+    break;
+  default:
+    pressure = constrain(pressure, 0.0f, SENSOR_MAX_KPA);
+    break;
+  }
+
+  return {pressure, status};
 }
 
 void setup() {
@@ -51,11 +81,12 @@ void loop() {
 
   if (millis() - lastUpdate >= 250) {
     lastUpdate = millis();
-    const float pressureKpa = mockPressureKpa();
-    pressureDisplay.drawPressureData(pressureKpa);
+    const PressureReading reading = mockPressureReading();
+    pressureDisplay.drawPressureData(reading);
 
     Serial.print("Pressure: ");
-    Serial.print(pressureKpa, 1);
-    Serial.println(" kPa");
+    Serial.print(reading.pressureKpa, 1);
+    Serial.print(" kPa, status=");
+    Serial.println(static_cast<int>(reading.status));
   }
 }

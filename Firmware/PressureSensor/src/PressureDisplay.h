@@ -3,13 +3,14 @@
 
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
+#include "PressureReading.h"
 
 class PressureDisplay {
 public:
   PressureDisplay(Arduino_GFX *display, float sensorMaxKpa);
 
   void drawStaticPressureScreen();
-  void drawPressureData(float pressureKpa);
+  void drawPressureData(const PressureReading &reading);
 
 private:
   Arduino_GFX *_display;
