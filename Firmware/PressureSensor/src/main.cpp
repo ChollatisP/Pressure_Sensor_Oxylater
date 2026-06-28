@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include <Arduino_GFX_Library.h>
 #include "PressureDisplay.h"
+#include "RoundLcd.h"
 
 /*
   ESP-12S / ESP8266 Round LCD V1.0 pressure display mockup.
@@ -20,23 +20,10 @@
 #define LCD_RST 0
 #define LCD_BL 5
 
-#define LCD_WIDTH 240
-#define LCD_HEIGHT 240
 #define SENSOR_MAX_KPA 50.0f
 
-Arduino_DataBus *bus = new Arduino_HWSPI(
-    LCD_DC,
-    LCD_CS);
-
-Arduino_GFX *display = new Arduino_GC9A01(
-    bus,
-    LCD_RST,
-    0,
-    true,
-    LCD_WIDTH,
-    LCD_HEIGHT);
-
-PressureDisplay pressureDisplay(display, SENSOR_MAX_KPA);
+RoundLcd roundLcd(LCD_DC, LCD_CS, LCD_RST, LCD_BL);
+PressureDisplay pressureDisplay(roundLcd.display(), SENSOR_MAX_KPA);
 
 static float mockPressureKpa() {
   const float t = millis() / 1000.0f;
@@ -48,10 +35,7 @@ void setup() {
   Serial.begin(115200);
   delay(300);
 
-  pinMode(LCD_BL, OUTPUT);
-  digitalWrite(LCD_BL, HIGH);
-
-  if (!display->begin()) {
+  if (!roundLcd.begin()) {
     Serial.println("Display init failed. Check LCD pins and driver type.");
     while (true) {
       delay(1000);
